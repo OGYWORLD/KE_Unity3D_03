@@ -1,0 +1,25 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace MyProject.Skill{
+    #ROOTNAMESPACEBEGIN#
+public class #SCRIPTNAME# : SkillBehaviour
+{
+	public override void Apply()
+	{
+
+	}
+
+	public override void Use()
+	{
+
+	}
+
+	public override void Remove()
+	{
+
+	}
+}
+}
+#ROOTNAMESPACEEND#

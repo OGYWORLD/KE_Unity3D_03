@@ -11,6 +11,7 @@ namespace MyProject
         public GameObject loginPannel;
         public GameObject infoPannel;
         public GameObject createPannel;
+        public GameObject searchPannel;
 
         public InputField emailInput;
         public InputField pwInput;
@@ -25,11 +26,14 @@ namespace MyProject
 
         public Button deleteButton;
 
+        public Button searchButton;
+
         private void Awake()
         {
             loginButton.onClick.AddListener(LoginButtonClick);
             signUpButton.onClick.AddListener(OnCreate);
             deleteButton.onClick.AddListener(OnDeleteAccount);
+            searchButton.onClick.AddListener(ToSearch);
         }
 
         public void LoginButtonClick()
@@ -94,7 +98,11 @@ namespace MyProject
             print("계정 삭제 실패");
         }
         
-
+        private void ToSearch()
+        {
+            loginPannel.SetActive(false);
+            searchPannel.SetActive(true);
+        }
     }
 
   

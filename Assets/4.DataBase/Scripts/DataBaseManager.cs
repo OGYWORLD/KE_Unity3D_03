@@ -22,6 +22,13 @@ namespace MyProject
 
         private UserData data;
 
+        public enum SearchInfo
+        {
+            email,
+            name,
+            lv
+        }
+
         private void Awake()
         {
             if(Instance == null)
@@ -41,7 +48,7 @@ namespace MyProject
 
         public void DBConnect()
         {
-            string config = $"server=127.0.0.1;port=3306;database={dbName};uid=root;pwd={rootPasswd};charset=utf8;";
+            string config = $"server=43.203.209.38;port=3306;database={dbName};uid=root;pwd={rootPasswd};charset=utf8;";
 
             conn = new MySqlConnection(config);
             conn.Open();
@@ -53,31 +60,7 @@ namespace MyProject
         // 로그인이 완료 되었을 때 호출될 함수를 파라미터로 함께 받아주도록 함.
         public void Login(string email, string passwd, Action<UserData> successCallback, Action failureCallback)
         {
-            string pwHash = "";
-
-            /*
-             using(SHA256 sha256 = SHA256.Create())
-             {
-                byte[] hashArray = sha256.ComputeHash(Encoding.UTF8.GetBytes(passwd));
-                foreach(byte b in hashArray)
-                {
-                pwHash += $"{b:X2}"; // 16진수로 보간
-                // == pwHash += b.ToString("X2");
-                }   
-            }
-             */
-            SHA256 sha256 = SHA256.Create();
-            byte[] hashArray = sha256.ComputeHash(Encoding.UTF8.GetBytes(passwd));
-            foreach(byte b in hashArray)
-            {
-                pwHash += $"{b:X2}"; // 16진수로 보간
-                // == pwHash += b.ToString("X2");
-            }
-
-            sha256.Dispose();
-
-            print(pwHash);
-
+            passwd = HashFunctionSHA256(passwd);
 
             MySqlCommand cmd = new MySqlCommand();
             cmd.Connection = conn;
@@ -140,6 +123,8 @@ namespace MyProject
             {
                 MySqlCommand cmd = new MySqlCommand();
 
+                data.PW = HashFunctionSHA256(data.PW);
+
                 cmd.Connection = conn;
                 cmd.CommandText = $"INSERT INTO {tableName}(email,pw,name,lv,class,profile_text)" +
                     $" VALUES('{data.email}','{data.PW}','{data.name}',{data.lv},{(int)data.charClass},'{data.profileText}')";
@@ -161,6 +146,7 @@ namespace MyProject
             catch(Exception e)
             {
                 FailQuery?.Invoke();
+                print(e.Message);
             }
            
         }
@@ -169,6 +155,8 @@ namespace MyProject
         {
             try
             {
+                data.PW = HashFunctionSHA256(data.PW);
+
                 MySqlCommand cmd = new MySqlCommand();
 
                 cmd.Connection = conn;
@@ -225,6 +213,69 @@ namespace MyProject
             {
                 FailQuery?.Invoke();
             }
+        }
+
+        public void Search(int category, object target, Action<string> SuccessQuery, Action FailQuery)
+        {
+            MySqlCommand cmd = new MySqlCommand();
+            cmd.Connection = conn;
+
+            cmd.CommandText = $"SELECT * FROM {tableName} WHERE {(SearchInfo)category} LIKE '{target}%'";
+
+            MySqlDataAdapter dataAdapter = new MySqlDataAdapter(cmd);
+
+            DataSet set = new DataSet();
+
+            dataAdapter.Fill(set);
+
+            bool isLoginSuccess = set.Tables.Count > 0 && set.Tables[0].Rows.Count > 0;
+
+            if (isLoginSuccess)
+            {
+                StringBuilder sb = new StringBuilder();
+
+                for(int i = 0; i < set.Tables[0].Rows.Count; i++)
+                {
+                    DataRow row = set.Tables[0].Rows[i];
+                    UserData ud = new UserData(row);
+                    sb.Append($"이메일: {ud.email}, 이름: {ud.name}, 레벨: {ud.lv}, 직업: {(CharClass)ud.charClass}, 인삿말: {ud.profileText}\n");
+                }
+
+                SuccessQuery?.Invoke(sb.ToString());
+            }
+            else
+            {
+                // 로그인 실패
+                FailQuery.Invoke();
+            }
+        }
+
+        private string HashFunctionSHA256(string passwd)
+        {
+            string pwHash = "";
+
+            /*
+             using(SHA256 sha256 = SHA256.Create())
+             {
+                byte[] hashArray = sha256.ComputeHash(Encoding.UTF8.GetBytes(passwd));
+                foreach(byte b in hashArray)
+                {
+                pwHash += $"{b:X2}"; // 16진수로 보간
+                // == pwHash += b.ToString("X2");
+                }   
+            }
+             */
+            SHA256 sha256 = SHA256.Create();
+            byte[] hashArray = sha256.ComputeHash(Encoding.UTF8.GetBytes(passwd));
+            foreach (byte b in hashArray)
+            {
+                pwHash += $"{b:X2}"; // 16진수로 보간
+                // == pwHash += b.ToString("X2");
+            }
+
+            sha256.Dispose();
+
+            return pwHash;
         }
 
     }
